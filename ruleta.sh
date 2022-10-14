@@ -116,45 +116,97 @@ inverseLabrouchere ()
 
   declare -a my_sequence=(1 2 3 4)
   declare -i bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+  declare -i total_plays=0
+  declare -i limit_to_renew=$(($money+50))
   echo -e "\n${yellowColour}[+] ${endColour}Haz comenzado con la secuencia [${blueColour}${my_sequence[@]}${endColour}]"
+  echo -e "${yellowColour}[+]${endColour} El tope a renovar la secuencia está establecido por encima de los ${yellowColour}$limit_to_renew${endColour}\n"
   tput civis
 
-  while true; do
+  while true; do 
     declare -i random_number="$(($RANDOM % 37))"
-    money=$(($money - $bet))
-    echo -e "${yellowColour}[+]${endColour} Has invertido ${yellowColour}$bet\$${endColour}"
-    echo -e "${yellowColour}[+]${endColour} Tienes ${yellowColour}$money${endColour}"
+      let total_plays+=1
+      money=$(($money - $bet))
+      if [ ! "$money" -lt 0 ]; then
+        echo -e "${yellowColour}[+]${endColour} Has invertido ${yellowColour}$bet\$${endColour}"
+        echo -e "${yellowColour}[+]${endColour} Tienes ${yellowColour}$money${endColour}"
 
-    echo -e "\n${yellowColour}[+]${endColour} Ha salido el número ${purpleColour}$random_number${endColour}"
-    sleep 5
+        echo -e "\n${yellowColour}[+]${endColour} Ha salido el número ${purpleColour}$random_number${endColour}"
 
-    case "$par_impar" in
-      par)
-        if [ "$(($random_number % 2))" -eq 0 ] && [ "$random_number" -ne 0 ]; then
-          echo -e "${yellowColour}[+]${endColour}${greenColour} El numero es par${endColour}"
-          reward=$(($bet*2))
-          let money+=$reward
-          echo -e "${yellowColour}[+]${endColour} Tienes ${yellowColour}$money\$${endColour}"
+        case "$par_impar" in
+          par)
+            if [ "$(($random_number % 2))" -eq 0 ] && [ "$random_number" -ne 0 ]; then
+              echo -e "${yellowColour}[+]${endColour}${greenColour} El numero es par${endColour}"
+              reward=$(($bet*2))
+              let money+=$reward
+              echo -e "${yellowColour}[+]${endColour} Tienes ${yellowColour}$money\$${endColour}"
+              
+              if [ $money -gt $limit_to_renew ]; then
+                 echo -e "${yellowColour}[+]${endColour} Se ha superado el tope establecido de ${yellowColour}$limit_to_renew${endColour}\$ para renovar nuestra secuencia "
+                 let limit_to_renew+=50
+                 echo -e "${yellowColour}[+]${endColour} El tope se ha establecid en: ${yellowColour}$limit_to_renew${endColour}\$"
+                 my_sequence=(1 2 3 4)
+                 bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+                 echo -e "${yellowColour}[+]${endColour} La secuencia ha sido restablecida a [${blueColour}${my_sequence[@]}${endColour}]"
+               else
+                  my_sequence+=($bet)
+                  my_sequence=(${my_sequence[@]})
+                  echo -e "\n${yellowColour}[+] ${endColour}Secuencia actualizada: [${blueColour}${my_sequence[@]}${endColour}]"
 
-          my_sequence+=($bet)
-          my_sequence=(${my_sequence[@]})
-          echo -e "\n${yellowColour}[+] ${endColour}Secuencia actualizada: [${blueColour}${my_sequence[@]}${endColour}]"
+                  if [ "${#my_sequence[@]}" -gt 1 ]; then
+                    bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+                  elif [ "${#my_sequence[@]}" -eq 1 ]; then
+                    bet=${my_sequence[0]}
+                  fi
+              fi
+            elif [ "$(($random_number % 2))" -eq 1 ] || [ "$random_number" -eq 0 ]; then
+              if [ "$(($random_number % 2))" -eq 1 ]; then
+                echo -e "${yellowColour}[!]${endColour}${redColour} El número es impar${endColour}"
+              else
+                echo -e "${yellowColour}[!]${endColour}${redColour} El número es cero${endColour}"
+              fi
 
-          if [ "${#my_sequence[@]}" -ne 1 ]; then
-            bet=$((${my_sequence[0]}+${my_sequence[-1]}))
-          elif [ "${#my_sequence[@]}" -eq 1 ]; then
-            bet=${my_sequence[0]}
-          fi
-        elif [ "$random_number" -eq 0 ]; then
-          echo -e "${yellowColour}[!]${endColour}${redColour} El número es cero${endColour}"
+               if [ $money -lt $(($limit_to_renew-100)) ]; then
+                 echo -e "${redColour}[!]${endColour} Has llegado a un mínimo crítico, procediendo a reajustar el tope"
+                 let limit_to_renew-=50
+                 echo -e "${yellowColour}[+]${endColour} El tope ha sido renovado a ${yellowColour}$limit_to_renew${endColour}\$"
 
-        else
-          echo -e "${yellowColour}[!]${endColour}${redColour} El número es impar${endColour}"
-        fi
-      ;;
-      impar) echo 2 or 3
-      ;;
-    esac
+                 unset my_sequence[0]
+                 unset my_sequence[-1] 2>/dev/null
+                 my_sequence=(${my_sequence[@]})
+
+                 echo -e "\n${yellowColour}[+] ${endColour}Secuencia actualizada: [${blueColour}${my_sequence[@]}${endColour}]"
+
+                 if [ "${#my_sequence[@]}" -gt 1 ]; then
+                   bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+                 elif [ "${#my_sequence[@]}" -eq 1 ]; then
+                   bet=${my_sequence[0]}
+                 fi
+               else
+                  unset my_sequence[0]
+                  unset my_sequence[-1] 2>/dev/null
+                  my_sequence=(${my_sequence[@]})
+                  echo -e "\n${yellowColour}[+] ${endColour}Secuencia actualizada: [${blueColour}${my_sequence[@]}${endColour}]"
+                  
+                  if [ "${#my_sequence[@]}" -gt 1 ]; then
+                    bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+                  elif [ "${#my_sequence[@]}" -eq 1 ]; then
+                    bet=${my_sequence[0]}
+                  elif [ "${#my_sequence[@]}" -eq 0 ]; then
+                    my_sequence=(1 2 3 4)
+                    echo -e "${yellowColour}[!]${endColour}${redColour} Has perdido la secuencia${endColour} por lo que será restablecida a [${blueColour}${my_sequence[@]}${endColour}]"
+                    bet=$((${my_sequence[0]}+${my_sequence[-1]}))
+                  fi
+               fi
+            fi
+          ;;
+          impar) echo 2 or 3
+          ;;
+        esac
+    else
+      echo -e "\n${yellowColour}[!]${endColour}${redColour} Te has quedado sin saldo${endColour}"
+      echo -e "\t${yellowColour}[+]${endColour} Ha habido un total de ${yellowColour}$total_plays${endColour} jugada(s)"
+      tput cnorm; exit 0
+    fi
   done
 }
 tput cnorm
